@@ -98,18 +98,25 @@ void loop(){
 
 
   
+  //check if question was answered
   if(Serial.available()) {
     val = Serial.read();
-//    Serial.println(val);
     if( val == 'y') {
       nod(NOD_AMOUNT);
     } else if( val == 'n') {
       turn(TURN_AMOUNT);
     } else {
       //Do Nothing
-    }    
+    }
+    //Nod or Turn action completed
+    //send communication to update question 
+    Serial.println("d");
   }
   
-      Serial.println("done");
+//  //Nod or Turn action completed
+//  //send communication to update question 
+//  while(Serial.available() <= 0) {
+//    Serial.println("d");
+//  }
 }
 
