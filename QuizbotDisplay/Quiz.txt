@@ -1,0 +1,2 @@
+image,question,a,b,c,d,answer
+board.jpg,What is the name of the board used to make quizbot?,Arduino,Cappuccino,Palomino,Neutrino,a
