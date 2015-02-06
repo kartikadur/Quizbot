@@ -147,7 +147,7 @@ void introPage() {
   textFont(qFont, qFontSize);
   text("Welcome to quizbot", width/2, height/10);
   textFont(aFont, aFontSize);
-  text("I will ask you " + outOfTotal + " question(s), answer as many correctly as you can", width/2, height/2);
+  text("I will ask you " + (outOfTotal - 1) + " question(s), answer as many correctly as you can", width/2, height/2);
   
   //track mouse position
   update();
@@ -170,8 +170,17 @@ void questionsPage() {
   }
   
   //Display Image
+  //calculate image dimensions
+  int vc = displayHeight/2; // column line
+  int hc = displayWidth/2; // center horizontal line
+  int p = 100; // padding
+  float w_a, i_r, h_a, p_t;
   show = loadImage(list.getString(currentQuestion, 0));
-  image(show, 100, 100, width/2 - 100, width/2 - 100);
+  w_a = hc - 2 * p;  // target image width with padding on both left and right sides
+  i_r = w_a / show.width; // scale factor for orignal to target image
+  h_a = show.height * i_r; // target image height
+  p_t = vc - .5 * h_a; // top padding
+  image(show, p, p_t, w_a, h_a);
   
   //Display question
   showQuestion();
@@ -179,14 +188,6 @@ void questionsPage() {
   //track mouse position
   update();
 
-}
-
-void showAnswers() {
-  fill(255);
-  textFont(aFont, aFontSize);
-  for(int i = 0; i < 4; i++) {
-    text(list.getString(currentQuestion,i + 2), width/2 + 20, height/10 + 200 + (i*40));
-  }
 }
 
 void showQuestion() {
