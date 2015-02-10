@@ -18,26 +18,41 @@ int outOfTotal = 0;
 boolean firstPage = true;
 boolean lastPage = false;
 
+color textColor = color(0);
+color backColor = color(255);
+color buttonColor = color(230, 230, 230);
+color hoverColor = color(41, 171, 226);
+color correctColor = color(122, 201, 67);
+color incorrectColor = color(128, 128, 128);
 
 void setup() {
-  
+
   //Setup communication port with Arduino
   String portName = Serial.list()[0];
   myPort = new Serial(this, portName, 9600);
-  
+
   //setup display
   size(displayWidth, displayHeight);
-  background(0);
-  
+
   //setup fonts
   qFont = createFont("HelveticaNeue", qFontSize);
   aFont = createFont("HelveticaNeue", aFontSize);
-  
+
   //Import the list of questions
   list = loadTable("Quiz.txt", "csv");
-  
+
   outOfTotal = list.getRowCount();
   println(outOfTotal);
+
+
+  //Create all the buttons
+  buttonNav = new Button("Next");
+  for (int i = 0; i < 4; i++) {
+    button[i] = new Button(list.getString(0, i + 2));
+    //set button colors to default
+    button[i].setActiveColor(buttonColor);
+    button[i].setHoverColor(hoverColor);
+  }
 }
 
 boolean sketchFullScreen() {
@@ -46,9 +61,12 @@ boolean sketchFullScreen() {
 
 void draw() {
   clear();
-  if(firstPage && !lastPage) {
+  background(backColor);
+  fill(textColor);
+
+  if (firstPage && !lastPage) {
     //display introduction page
-    introPage();  
+    introPage();
   } else if (!firstPage && !lastPage) {
     //Show questions page
     questionsPage();
@@ -61,58 +79,50 @@ void draw() {
 /** ------------- Functionality ----------------------- **/
 //Update the displayed graphics 
 void update() {
-  if(!firstPage && !lastPage) {
+  if (!firstPage && !lastPage) {
     //Question Page Answer Buttons
     //update button background based on mouseover
-    for(int i = 0; i < 4; i++) {
-      if(button[i].overButton()) {
-        button[i].currentColor = color(200);
-        button[i].drawButton();
-      } else {
-        button[i].currentColor = color(20);
-        button[i].drawButton();
-      }
+    for (int i = 0; i < 4; i++) {
+      button[i].update();
+      button[i].drawButton();
     }
   } else {
     //First Page and Last Page Navigation buttons
     //update button background based on mouseover
-    if(buttonNav.overButton()) {
-      buttonNav.currentColor = color(200);
-      buttonNav.drawButton();
-    } else {
-      buttonNav.currentColor = color(20);
-      buttonNav.drawButton();
-    }
+    buttonNav.update();
+    buttonNav.drawButton();
   }
 }
 
 //Iterate through all the buttons on mouse-click
 //Send Result to Arduino
 void mousePressed() {
-  if(!firstPage && !lastPage) {
-    for(int i = 0; i < 4; i++) {
+  if (!firstPage && !lastPage) {
+    for (int i = 0; i < 4; i++) {
+
       //Check if mouse pointer is over button
-      if(button[i].overButton()) {
+      if (button[i].overButton()) {
         //Compare button value with stored answer
         //Send 'y' if match, 'n' if no match
-        if(button[i].id.equals(list.getString(currentQuestion, 6).toLowerCase())) {
+        if (button[i].id.equals(list.getString(currentQuestion, 6).toLowerCase())) {
+          //set button color for correct answer
+          button[i].activeColor = correctColor;
           myPort.write('y');
           correctAnswers++;
         } else {
+          //set button color for incorrect answer
+          button[i].activeColor = incorrectColor;
           myPort.write('n');
-        }      
-      } else {
-        //do nothing
+        }
       }
     }
   } else {
     //Check if mouse pointer is over button
-    if(firstPage && !lastPage && buttonNav.overButton()) {
+    if (firstPage && !lastPage && buttonNav.overButton()) {
+      //set first page to false
       firstPage = !firstPage;
-    } else if(!firstPage && lastPage && buttonNav.overButton()) {
+    } else if (!firstPage && lastPage && buttonNav.overButton()) {
       exit();
-    } else {
-      //Do Nothing
     }
   }
 }
@@ -121,17 +131,20 @@ void mousePressed() {
 void serialEvent(Serial p) {
   String val = p.readString();
   println(val);
-  if(val.equals("d")) {
-    if(currentQuestion < outOfTotal - 1){
+  if (val.equals("d")) {
+    if (currentQuestion < outOfTotal - 1) {
       //there are more questions to display
       //Advance question counter
       currentQuestion++;
-    } else if(currentQuestion == outOfTotal - 1){
+      for (int i = 0; i < 4; i++) {
+        //set button colors to default
+        button[i].setActiveColor(buttonColor);
+        button[i].setHoverColor(hoverColor);
+      }
+    } else if (currentQuestion == outOfTotal - 1) {
       //There are no more questions to display
       //show last page
       lastPage = !lastPage;
-    } else {
-      //Do Nothing
     }
   }
 }
@@ -139,36 +152,34 @@ void serialEvent(Serial p) {
 /** --------------------------- Display -------------------------- **/
 //display introduction
 void introPage() {
-  buttonNav = new Button("Next", 4 * width/5, height/2 + 40, 100, 30);
+  buttonNav.setDimensions(4 * width/5, height/2 + 40, 100, 30);
+  buttonNav.setActiveColor(buttonColor);
+  buttonNav.setHoverColor(hoverColor);
   buttonNav.setText("NEXT", aFont, aFontSize);
-  
+  buttonNav.drawButton();
+
   textAlign(CENTER, BASELINE);
-  fill(255);
   textFont(qFont, qFontSize);
   text("Welcome to quizbot", width/2, height/10);
   textFont(aFont, aFontSize);
   text("I will ask you " + (outOfTotal - 1) + " question(s), answer as many correctly as you can", width/2, height/2);
-  
+
   //track mouse position
   update();
 }
 
 //display questions
 void questionsPage() {
-  
-  textAlign(LEFT, BASELINE);
+
+
   //Draw Buttons
-  for(int i = 0; i < 4; i++) {
-    button[i] = new Button(list.getString(0, i + 2), 
-                            width/2 + 15,
-                            height/10 + 175 + (i * 40),
-                            width/2 - 100,
-                            30);
+  for (int i = 0; i < 4; i++) {
+    button[i].setDimensions(width/2 + 15, height/10 + 175 + (i * 40), width/2 - 100, 30);
     //set button text as answer value
-    button[i].setText(list.getString(currentQuestion,i + 2), aFont, aFontSize);
+    button[i].setText(list.getString(currentQuestion, i + 2), aFont, aFontSize);
     button[i].drawButton();
   }
-  
+
   //Display Image
   //calculate image dimensions
   int vc = displayHeight/2; // column line
@@ -181,35 +192,35 @@ void questionsPage() {
   h_a = show.height * i_r; // target image height
   p_t = vc - .5 * h_a; // top padding
   image(show, p, p_t, w_a, h_a);
-  
+
   //Display question
   showQuestion();
-  
+
   //track mouse position
   update();
-
 }
 
 void showQuestion() {
-  fill(255);
+  textAlign(CENTER, BASELINE);
   textFont(qFont, qFontSize);
-  text(list.getString(currentQuestion,1), width/2 + 20, height/10, width/2 - 100, 200);
+  text(list.getString(currentQuestion, 1), width/2 + 20, height/10, width/2 - 100, 200);
 }
 
 //display results
 void resultsPage() {
- buttonNav = new Button("Next", 4 * width/5, height/2 + 40, 100, 30);
- buttonNav.setText("NEXT", aFont, aFontSize);
- 
- textAlign(CENTER, CENTER);
- fill(255);
- textFont(qFont, qFontSize);
- text("Results", width/2, height/10);
- textFont(aFont, aFontSize);
- text("Score: " + correctAnswers + " out of " + (outOfTotal - 1) + " Questions.", width/2, height/2);
- 
- //track mouse position
- update();
+  buttonNav.setDimensions(4 * width/5, height/2 + 40, 100, 30);
+  buttonNav.setActiveColor(buttonColor);
+  buttonNav.setHoverColor(hoverColor);
+  buttonNav.setText("NEXT", aFont, aFontSize);
+  buttonNav.drawButton();
 
+  textAlign(CENTER, BASELINE);
+
+  textFont(qFont, qFontSize);
+  text("Results", width/2, height/10);
+  textFont(aFont, aFontSize);
+  text("Score: " + correctAnswers + " out of " + (outOfTotal - 1) + " Questions.", width/2, height/2);
+
+  //track mouse position
+  update();
 }
-
